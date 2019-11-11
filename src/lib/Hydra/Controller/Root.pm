@@ -15,6 +15,7 @@ use File::Basename;
 use JSON;
 use List::MoreUtils qw{any};
 use Net::Prometheus;
+use File::Slurp;
 
 # Put this controller at top-level.
 __PACKAGE__->config->{namespace} = '';
@@ -42,6 +43,7 @@ sub begin :Private {
     $c->stash->{curUri} = $c->request->uri;
     $c->stash->{version} = $ENV{"HYDRA_RELEASE"} || "<devel>";
     $c->stash->{nixVersion} = $ENV{"NIX_RELEASE"} || "<devel>";
+    $c->stash->{load} = join(" ", (split / /, read_file("/proc/loadavg"), 4)[0, 1, 2]);
     $c->stash->{curTime} = time;
     $c->stash->{logo} = defined $c->config->{hydra_logo} ? "/logo" : "";
     $c->stash->{tracker} = $ENV{"HYDRA_TRACKER"};
