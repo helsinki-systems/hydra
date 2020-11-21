@@ -29,6 +29,7 @@ my $dbh = $db->storage->dbh;
 $dbh->do("listen build_started");
 $dbh->do("listen build_finished");
 $dbh->do("listen step_finished");
+$dbh->do("listen kill_notify");
 
 sub buildStarted {
     my ($buildId) = @_;
@@ -135,6 +136,9 @@ while (!$queued_only) {
                 buildFinished($build, @payload[1..$#payload]);
             } elsif ($channelName eq "step_finished") {
                 stepFinished(int($payload[0]), int($payload[1]));
+            } elsif ($channelName eq "kill_notify") {
+                print("got notification: kys\n");
+                exit 1;
             }
             1;
         } or do {
