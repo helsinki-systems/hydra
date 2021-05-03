@@ -6,6 +6,7 @@ use warnings;
 use base 'Hydra::Base::Controller::NixChannel';
 use Hydra::Helper::Nix;
 use Hydra::Helper::CatalystUtils;
+use Hydra::Helper::Tailon;
 use File::Basename;
 use File::stat;
 use File::Slurp;
@@ -143,12 +144,23 @@ sub view_log : Chained('buildChain') PathPart('log') {
             $c->stash->{build}->drvpath);
 }
 
+sub view_tailon : Chained('buildChain') PathPart('tailon') {
+    my ($self, $c, $stepnr, $mode) = @_;
+
+    my $step = $c->stash->{build}->buildsteps->find({stepnr => $stepnr});
+    notFound($c, "Build doesn't have a build step $stepnr.") if !defined $step;
+
+    $c->stash->{step} = $step;
+
+    showLog($c, "tailon", $step->busy == 0, $step->drvpath);
+}
 
 sub showLog {
     my ($c, $mode, $finished, $drvPath) = @_;
     $mode //= "pretty";
 
     my $log_uri = $c->uri_for($c->controller('Root')->action_for("log"), [basename($drvPath)]);
+    $c->stash->{tailon_bin} = $c->config->{tailon_bin};
 
     if ($mode eq "pretty") {
         $c->stash->{log_uri} = $log_uri;
@@ -164,6 +176,12 @@ sub showLog {
         $c->stash->{log_uri} = $log_uri . "?tail=$lines";
         $c->stash->{tail} = $lines;
         $c->stash->{template} = 'log.tt';
+    }
+
+    elsif ($mode eq "tailon") {
+        $c->stash->{tailon_socket} = basename spawnTailon($c, $drvPath);
+        $c->stash->{tailon_socket} =~ s/.sock$//g;
+        $c->stash->{template} = 'tailon.tt';
     }
 
     else {

@@ -269,6 +269,7 @@
                 JSON
                 JSONAny
                 JSONXS
+                LinuxInotify2
                 LWP
                 LWPProtocolHttps
                 NetAmazonS3
